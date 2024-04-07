@@ -5,29 +5,29 @@ const orders = {
     packages: [
       {
         id: "product-1",
-        amount: 500,
+        amount: 1000,
         products: [
           {
-            name: "蘋果",
-            quantity: 2,
-            price: 200,
+            name: "BENQ的螢幕",
+            quantity: 1,
+            price: 1000,
           },
         ],
       },
     ],
   },
   2: {
-    amount: 1000,
+    amount: 7000,
     currency: "TWD",
     packages: [
       {
         id: "product-2",
-        amount: 500,
+        amount: 7000,
         products: [
           {
-            name: "橘子",
+            name: "想買什麼就買什麼",
             quantity: 7,
-            price: 30,
+            price: 1000,
           },
         ],
       },
