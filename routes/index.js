@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const HmacSHA256 = require("crypto-js");
-const Base64 = require("crypto-js");
+const { HmacSHA256 } = require("crypto-js");
+const Base64 =require("crypto-js/enc-base64");
 
 require("dotenv").config();
 
@@ -33,25 +33,45 @@ router
     res.render("checkout", { order });
   });
 /*跟Line pay 串接的API */
-router.post("/createOrder/:orderId", (req, res) => {
+router.post("/createOrder/:orderId", async(req, res) => {
   const { orderId } = req.params;
   const order = orders[orderId];
-  console.log("createOrder", order);
-  const linePayBody = {
-    ...order,
-    redirectUrls: {
-      confirmUrl: "$(LINE_PAY_RETURN_HOST)$(LINE_PAY_RETURN_CONFIRM_URL)",
-      cancelUrl: "$(LINE_PAY_RETURN_HOST)$(LINE_PAY_RETURN_CANCEL_URL)",
-    },
-  };
-  const uri = "/payments/request";
-  const nonce = parseInt(new Date().getTime() / 1000);
-  const string =
-  `$(LINEPAY_CHANNEL_SECRET_KEY)$(uri)$(JSON.stringify(linePayBody))$(nonce)`;
-//   const signature = HmacSHA256(string, LINEPAY_CHANNEL_SECRET_KEY);
-  //   console.log(linePayBody, signature);
+    //   console.log("createOrder", order);
+    try {
+        const linePayBody = {
+          ...order,
+          redirectUrls: {
+            confirmUrl: "$(LINE_PAY_RETURN_HOST)$(LINE_PAY_RETURN_CONFIRM_URL)",
+            cancelUrl: "$(LINE_PAY_RETURN_HOST)$(LINE_PAY_RETURN_CANCEL_URL)",
+          },
+        };
+        const uri = "/payments/request";
+        const nonce = parseInt(new Date().getTime() / 1000);
+        const string = `$(LINEPAY_CHANNEL_SECRET_KEY)/${LINEPAY_VERSION}$(uri)$(JSON.stringify(linePayBody))$(nonce)`;
+        const signature = Base64.stringify(
+          HmacSHA256(string, LINEPAY_CHANNEL_SECRET_KEY)
+        );
+        const headers = {
+          "Content-Type": 'application / json',
+          "X-LINE-ChannelId": LINEPAY_CHANNEL_ID,
+          "X-LINE-Authorization-Nonce": nonce,
+          "X-LINE-Authorization": signature,
+        };
+        //準備送給line pay 的資訊
+        // console.log(linePayBody, signature);
+        const url = `${LINEPAY_SITE}/${LINEPAY_VERSION}$(uri)`;
 
-  res.end();
+        const linePayRes = await axios.post(url, linePayBody, { headers });
+        if (linePayRes?.data?.returnCode === "0000") {
+            
+        }
+        console.log(linePayRes);
+        
+    } catch (error) {
+        console.log(error);
+        //錯誤的回饋
+         res.end(); 
+    }
 });
 
 module.exports = router;
